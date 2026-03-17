@@ -1,0 +1,45 @@
+{
+  "skill_name": "docs-architect",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我给这个 NestJS 后端项目生成完整的文档结构，让 AI 编码工具能更好地理解这个项目",
+      "expected_output": "Should generate CLAUDE.md, ARCHITECTURE.md, and docs/ directory with API.md, DESIGN.md, SECURITY.md, TESTING.md, QUALITY_SCORE.md. Should detect NestJS backend type and skip FRONTEND.md. Content should reference actual NestJS modules and services found in the project.",
+      "files": ["D:\\ProjectFiles\\NestJSProjects\\nestjs_test_01"],
+      "assertions": [
+        {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
+        {"name": "architecture-exists", "description": "Generated an ARCHITECTURE.md file", "type": "file_exists"},
+        {"name": "docs-dir-exists", "description": "Generated a docs/ directory with at least 2 files", "type": "directory_exists"},
+        {"name": "project-type-correct", "description": "Correctly identified as backend: has API.md or similar, does NOT have FRONTEND.md", "type": "content_check"},
+        {"name": "content-is-specific", "description": "Documentation references actual project files/modules", "type": "content_check"},
+        {"name": "cross-links-valid", "description": "Every document mentioned in the entry-point file actually exists", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这个 Vue 管理后台项目需要文档，请帮我创建一个完整的渐进式披露文档体系",
+      "expected_output": "Should generate CLAUDE.md, ARCHITECTURE.md, and docs/ with FRONTEND.md, DESIGN.md, SECURITY.md, QUALITY_SCORE.md, PRODUCT_SENSE.md. Should detect Vue3 + Vite frontend type.",
+      "files": ["D:\\ProjectFiles\\WebProjects\\Geeker-Admin"],
+      "assertions": [
+        {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
+        {"name": "frontend-doc-exists", "description": "Generated a FRONTEND.md covering frontend-specific concerns", "type": "file_exists"},
+        {"name": "no-irrelevant-backend-docs", "description": "Does NOT generate DATABASE.md for a frontend-only project", "type": "content_check"},
+        {"name": "content-is-specific", "description": "Documentation mentions actual tech stack: Vue3, Vite, Pinia, TypeScript", "type": "content_check"},
+        {"name": "design-system-covered", "description": "FRONTEND.md or DESIGN.md covers component organization, routing, or state management", "type": "content_check"},
+        {"name": "cross-links-valid", "description": "Every document mentioned in the entry-point file actually exists", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "set up docs for this project so AI agents can understand it better",
+      "expected_output": "Should generate a minimal but useful doc set appropriate for a tiny Express project. Should NOT over-generate. CLAUDE.md should be concise.",
+      "files": ["D:\\ProjectFiles\\ExpressProjects\\expressjs_test_01"],
+      "assertions": [
+        {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
+        {"name": "proportional-output", "description": "Generated a reasonable number of docs (not more than 6-7 files total)", "type": "structural_check"},
+        {"name": "content-not-boilerplate", "description": "Documentation references actual code from index.js", "type": "content_check"},
+        {"name": "entry-point-concise", "description": "Entry-point file is concise and proportional to project size (under 80 lines)", "type": "content_check"}
+      ]
+    }
+  ]
+}
