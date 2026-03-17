@@ -1,6 +1,6 @@
 ---
 name: docs-architect
-description: "Generate or reorganize project documentation following a progressive-disclosure, agent-legible structure inspired by harness engineering practices. Use this skill when the user asks to create project docs, generate documentation structure, organize repo docs, build a knowledge base for a codebase, set up CLAUDE.md, AGENTS.md, or ARCHITECTURE.md, audit existing documentation, or wants their project to be better understood by AI coding agents (Claude Code, Codex, Cursor, etc.). Also trigger when the user mentions 'docs/', 'documentation scaffold', 'doc gardening', 'harness engineering docs', 'progressive disclosure docs', or asks to make a repo 'agent-legible' or 'agent-friendly'. Even if the user just says 'set up docs for this project', 'this repo needs documentation', 'generate project docs', or 'organize my docs', this skill applies."
+description: "Generate or reorganize project documentation following a progressive-disclosure, agent-legible structure inspired by harness engineering practices. Use this skill when the user asks to create project docs, generate documentation structure, organize repo docs, build a knowledge base for a codebase, set up or reconcile CLAUDE.md, AGENTS.md, or ARCHITECTURE.md, audit existing documentation, or wants their project to be better understood by AI coding agents (Claude Code, Codex, Cursor, etc.). Also trigger when the user mentions 'docs/', 'documentation scaffold', 'doc gardening', 'harness engineering docs', 'progressive disclosure docs', or asks to make a repo 'agent-legible', 'agent-friendly', or compatible with both Claude Code and Codex. Even if the user just says 'set up docs for this project', 'this repo needs documentation', 'generate project docs', or 'organize my docs', this skill applies."
 ---
 
 # Docs Architect
@@ -15,13 +15,24 @@ Different AI coding tools use different root-level memory files. This skill gene
 
 | File | Tool | When to generate |
 |------|------|-----------------|
-| `CLAUDE.md` | Claude Code (Anthropic) | Default — generate this unless AGENTS.md is already present or user explicitly requests AGENTS.md |
-| `AGENTS.md` | Codex (OpenAI) | Generate when AGENTS.md already exists, or user explicitly requests it |
-| Both | Mixed team | If both files already exist, update both. If user wants both, generate both with shared content. |
+| `CLAUDE.md` | Claude Code (Anthropic) | Generate when `CLAUDE.md` already exists, when the user explicitly asks for Claude Code compatibility, or when the active workflow is clearly Claude-first |
+| `AGENTS.md` | Codex (OpenAI) | Generate when `AGENTS.md` already exists, when the user explicitly asks for Codex compatibility, or when the active workflow is clearly Codex-first |
+| Both | Mixed team | If both files already exist, if the user asks for both, or if the project is meant to support both Claude Code and Codex with the same documentation map |
 
-The content structure is the same regardless of filename — only the filename differs. Throughout this skill, "the entry-point file" refers to whichever file (CLAUDE.md or AGENTS.md) is appropriate for the project. When in doubt, check for existing files first; if neither exists, generate `CLAUDE.md`.
+The content structure is the same regardless of filename — only the filename differs. Throughout this skill, "the entry-point file" refers to whichever file (CLAUDE.md or AGENTS.md) is appropriate for the project. When in doubt, check for existing files first, then follow explicit user preference, then follow the active tool if it is clear. If compatibility with both tools is important, generate both files with the same core content.
 
 **Important**: If a CLAUDE.md or AGENTS.md already exists in the project, do NOT overwrite it entirely. Read it first, preserve its existing content and conventions, and augment it with the documentation map and architecture pointers that may be missing.
+
+## Cross-Tool Compatibility Rules
+
+Read `references/agent-memory-files.md` when the user mentions Claude Code, Codex, both tools, or when the repo already contains `CLAUDE.md` or `AGENTS.md`.
+
+- Prefer shared, tool-agnostic content across root entry-point files. The routine differences should be filename and, if needed, a short tool-specific note.
+- If the user explicitly asks for Claude Code, generate or update `CLAUDE.md`.
+- If the user explicitly asks for Codex, generate or update `AGENTS.md`.
+- If the repo already shows evidence of both tools, or the user asks for cross-tool compatibility, generate or update both files in the same pass and keep their structure aligned.
+- Avoid tool-specific command syntax, XML blocks, or workflow instructions in shared sections unless the project already relies on them. Put any unavoidable tool-specific notes in a short dedicated section.
+- Prefer portable Markdown and relative links that work the same way from both Claude Code and Codex.
 
 ## How It Works
 
@@ -48,6 +59,7 @@ Determine these attributes by scanning the codebase:
 | **Framework(s)** | Dependencies, config files (next.config, django settings, spring configs, etc.) |
 | **Project type** | See heuristics in `references/project-types.md` |
 | **Doc language** | Existing README language, code comments, commit messages → match that language. Default to English if ambiguous. |
+| **Agent-tool context** | Existing `CLAUDE.md` / `AGENTS.md`, mentions of Claude Code or Codex in docs/scripts, or explicit user/tool preference. See `references/agent-memory-files.md`. |
 | **Monorepo?** | Multiple package.json / go.mod, workspace configs (pnpm-workspace, Cargo workspace, etc.) |
 
 ### 1.2 Map the architecture
@@ -77,7 +89,7 @@ Based on the project analysis, select which documents to generate. Read `referen
 
 | Document | Purpose |
 |----------|---------|
-| `CLAUDE.md` or `AGENTS.md` | The entry point — a ~100-line table of contents that points agents to everything else (see "Agent Memory File Compatibility" above) |
+| `CLAUDE.md` and/or `AGENTS.md` | The entry point — a ~100-line table of contents that points agents to everything else (see "Agent Memory File Compatibility" above) |
 | `ARCHITECTURE.md` | Top-level architecture map: domains, layers, key dependencies, data flow |
 | `docs/DESIGN.md` | Design conventions, patterns, and principles used in this project |
 | `docs/QUALITY_SCORE.md` | Quality assessment per domain/module, tracking gaps |
@@ -110,9 +122,9 @@ Based on the project analysis, select which documents to generate. Read `referen
 
 ## Phase 3: Generate Documentation
 
-### 3.1 Start with the entry-point file (CLAUDE.md / AGENTS.md)
+### 3.1 Start with the entry-point file(s) (CLAUDE.md / AGENTS.md)
 
-This is the most critical file — it's the entry point that agents see first. Keep it around 100 lines. Structure:
+This is the most critical file — it's the entry point that agents see first. Keep each file around 100 lines. Structure:
 
 ```markdown
 # [Project Name]
@@ -139,6 +151,13 @@ This is the most critical file — it's the entry point that agents see first. K
 ```
 
 The goal: an agent reading only this entry-point file should know (a) what this project is, (b) how to run it, (c) where to find deeper info on any topic.
+
+If both `CLAUDE.md` and `AGENTS.md` are generated:
+
+- Write the shared sections once conceptually, then mirror them into both files.
+- Keep the project summary, quick start, repository map, architecture summary, and documentation map semantically identical.
+- Limit differences to filename, a short tool-specific note, or genuinely tool-specific workflow pointers already used by the project.
+- Do not let one file become a stale fork of the other.
 
 ### 3.2 Write ARCHITECTURE.md
 
@@ -173,6 +192,7 @@ When the project already has documentation:
 2. **Merge overlapping docs** — if there are multiple files covering similar topics, combine them
 3. **Mark migration** — at the top of reorganized docs, briefly note what was merged/moved so the team understands the change
 4. **Suggest deletions** — list any old doc files that are now redundant, but don't auto-delete them. Present the list to the user.
+5. **Resolve root-file drift** — if `CLAUDE.md` and `AGENTS.md` both exist but disagree, reconcile them around the same doc map and architecture pointers.
 
 ---
 
@@ -183,6 +203,7 @@ After generating all documents:
 1. **Cross-link check**: every document referenced in the entry-point file must exist; every document in docs/ should be referenced from the entry-point file
 2. **Freshness anchors**: each doc should reference specific files/dirs that exist in the repo, so staleness becomes detectable
 3. **Completeness check**: compare the generated set against the recommended set for this project type. Report any intentional omissions to the user.
+4. **Parity check**: if both `CLAUDE.md` and `AGENTS.md` exist, ensure their documentation map, quick start, and architecture pointers remain aligned.
 
 ---
 
@@ -191,8 +212,9 @@ After generating all documents:
 Present the results to the user as follows:
 
 1. **Summary**: what was analyzed, what project type was detected, what documents were generated
-2. **Document list**: each file path with a one-line description
-3. **Gaps noted**: anything that couldn't be determined from code alone and needs human input (mark these as `<!-- TODO: [question] -->` in the docs)
-4. **If reorganize mode**: list of old files that can be safely removed
+2. **Entry-point choice**: which root memory file(s) were generated or updated, and why
+3. **Document list**: each file path with a one-line description
+4. **Gaps noted**: anything that couldn't be determined from code alone and needs human input (mark these as `<!-- TODO: [question] -->` in the docs)
+5. **If reorganize mode**: list of old files that can be safely removed
 
 Write all files to disk. Do not ask for confirmation before writing — generate everything, then let the user review and request changes.

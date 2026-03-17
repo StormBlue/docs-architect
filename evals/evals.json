@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "帮我给这个 NestJS 后端项目生成完整的文档结构，让 AI 编码工具能更好地理解这个项目",
-      "expected_output": "Should generate CLAUDE.md, ARCHITECTURE.md, and docs/ directory with API.md, DESIGN.md, SECURITY.md, TESTING.md, QUALITY_SCORE.md. Should detect NestJS backend type and skip FRONTEND.md. Content should reference actual NestJS modules and services found in the project.",
+      "expected_output": "Should generate an appropriate root entry-point file (CLAUDE.md or AGENTS.md), ARCHITECTURE.md, and docs/ directory with API.md, DESIGN.md, SECURITY.md, TESTING.md, QUALITY_SCORE.md. Should detect NestJS backend type and skip FRONTEND.md. Content should reference actual NestJS modules and services found in the project.",
       "files": ["D:\\ProjectFiles\\NestJSProjects\\nestjs_test_01"],
       "assertions": [
         {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
@@ -18,7 +18,7 @@
     {
       "id": 2,
       "prompt": "这个 Vue 管理后台项目需要文档，请帮我创建一个完整的渐进式披露文档体系",
-      "expected_output": "Should generate CLAUDE.md, ARCHITECTURE.md, and docs/ with FRONTEND.md, DESIGN.md, SECURITY.md, QUALITY_SCORE.md, PRODUCT_SENSE.md. Should detect Vue3 + Vite frontend type.",
+      "expected_output": "Should generate an appropriate root entry-point file (CLAUDE.md or AGENTS.md), ARCHITECTURE.md, and docs/ with FRONTEND.md, DESIGN.md, SECURITY.md, QUALITY_SCORE.md, PRODUCT_SENSE.md. Should detect Vue3 + Vite frontend type.",
       "files": ["D:\\ProjectFiles\\WebProjects\\Geeker-Admin"],
       "assertions": [
         {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
@@ -32,13 +32,25 @@
     {
       "id": 3,
       "prompt": "set up docs for this project so AI agents can understand it better",
-      "expected_output": "Should generate a minimal but useful doc set appropriate for a tiny Express project. Should NOT over-generate. CLAUDE.md should be concise.",
+      "expected_output": "Should generate a minimal but useful doc set appropriate for a tiny Express project. Should NOT over-generate. The chosen root entry-point file should be concise.",
       "files": ["D:\\ProjectFiles\\ExpressProjects\\expressjs_test_01"],
       "assertions": [
         {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
         {"name": "proportional-output", "description": "Generated a reasonable number of docs (not more than 6-7 files total)", "type": "structural_check"},
         {"name": "content-not-boilerplate", "description": "Documentation references actual code from index.js", "type": "content_check"},
         {"name": "entry-point-concise", "description": "Entry-point file is concise and proportional to project size (under 80 lines)", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "这个 Express 项目团队同时使用 Claude Code 和 Codex，请同时生成 CLAUDE.md 和 AGENTS.md，并让它们指向同一套 docs/",
+      "expected_output": "Should generate both CLAUDE.md and AGENTS.md, keep their documentation maps and architecture pointers aligned, and write a shared docs/ structure without vendor-specific drift in the common sections.",
+      "files": ["D:\\ProjectFiles\\ExpressProjects\\expressjs_test_01"],
+      "assertions": [
+        {"name": "both-entry-files-exist", "description": "Generated both CLAUDE.md and AGENTS.md", "type": "file_exists"},
+        {"name": "entry-files-aligned", "description": "CLAUDE.md and AGENTS.md point to the same core docs and architecture file", "type": "content_check"},
+        {"name": "shared-doc-map", "description": "Both root files reference the same docs/ document set", "type": "structural_check"},
+        {"name": "limited-tool-specific-differences", "description": "Differences between the two root files are limited to small tool-specific notes", "type": "content_check"}
       ]
     }
   ]

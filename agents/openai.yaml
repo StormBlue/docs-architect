@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs Architect"
+  short_description: "Generate agent-friendly project docs"
+  default_prompt: "Use $docs-architect to audit this repo and generate Claude Code/Codex-compatible project documentation."
