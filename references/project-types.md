@@ -1,120 +1,79 @@
-# Project Type Detection & Document Mapping
+# Capability Detection And Document Selection
 
-## Project Type Heuristics
+Detect independent capabilities. Do not force a repository into one mutually exclusive project type: a monorepo may contain a web client, an API, a CLI, infrastructure, and libraries at once.
 
-### Frontend Application
-**Signals**: package.json with React/Vue/Svelte/Angular; src/components/ or src/pages/; vite.config / next.config / nuxt.config; index.html entry point; CSS/SCSS/Tailwind config
-**Recommended docs**: FRONTEND.md, DESIGN.md, PRODUCT_SENSE.md, QUALITY_SCORE.md, SECURITY.md
-**Skip**: DATABASE.md (unless BFF pattern), RELIABILITY.md (unless SSR/production), API.md (unless API routes)
+## Detection Procedure
 
-### Backend API Service
-**Signals**: Express/Fastify/Flask/Django/Spring/Gin/Actix routes; Dockerfile or docker-compose; database migrations; API schema files (OpenAPI, GraphQL schema)
-**Recommended docs**: API.md, DATABASE.md, RELIABILITY.md, SECURITY.md, DEPLOYMENT.md, QUALITY_SCORE.md
-**Skip**: FRONTEND.md, PRODUCT_SENSE.md (unless user-facing admin)
+1. Inspect manifests, workspace files, entry points, directory names, schemas, deployment files, and verified dependencies.
+2. Record positive evidence for each capability and its scope.
+3. Treat naming alone as a weak signal; confirm it with code, configuration, or a manifest.
+4. Select documents only for capabilities that need durable explanation.
+5. Mark uncertain capabilities as questions. Do not create speculative documents.
+6. Re-run detection incrementally for changed manifests, packages, and infrastructure rather than rescanning unrelated content.
 
-### Full-Stack Application
-**Signals**: Both frontend framework AND backend routes in same repo; or monorepo with client/server packages
-**Recommended docs**: All core + FRONTEND.md, API.md, DATABASE.md, RELIABILITY.md, PRODUCT_SENSE.md, DEPLOYMENT.md
-**Subdirs**: design-docs/, product-specs/, exec-plans/ (if active development)
+Also detect:
 
-### Library / SDK / Package
-**Signals**: Primarily exports functions/classes; has a build step producing dist/; published to package registry; minimal or no runtime entry point
-**Recommended docs**: API.md (as public API reference), DESIGN.md, TESTING.md, QUALITY_SCORE.md
-**Skip**: FRONTEND.md, RELIABILITY.md, DEPLOYMENT.md, PRODUCT_SENSE.md, PLANS.md
-**Special**: Add CONTRIBUTING.md, CHANGELOG.md conventions in DESIGN.md
+- documentation language from existing authoritative docs; preserve mixed-language conventions when intentional;
+- monorepo boundaries from workspace configuration and multiple manifests;
+- active agent tools from root and scoped instruction files;
+- lifecycle maturity from existing requirements, plans, decisions, releases, and CI;
+- source-of-truth files, generated outputs, and vendored directories that should be excluded.
 
-### CLI Tool
-**Signals**: bin/ directory or bin field in package.json; commander/yargs/clap/cobra dependency; main entry processes argv
-**Recommended docs**: API.md (as command reference), DESIGN.md, TESTING.md, QUALITY_SCORE.md
-**Skip**: FRONTEND.md, DATABASE.md (usually), PRODUCT_SENSE.md
+## Capability Matrix
 
-### Monorepo / Multi-Package
-**Signals**: pnpm-workspace.yaml, lerna.json, Cargo workspace, Go workspace, Nx config, Turborepo
-**Recommended docs**: All that apply per sub-package, plus top-level ARCHITECTURE.md mapping inter-package dependencies
-**Special**: Each significant sub-package may warrant its own mini docs/ or at minimum a README.md
+| Capability | Strong signals | Documentation candidates |
+|---|---|---|
+| Web or desktop UI | UI framework dependency plus components, routes, or native views | `docs/FRONTEND.md`, design system or UX docs, product specs |
+| Public or internal API | Route registrations, RPC services, GraphQL/OpenAPI schemas | `docs/API.md`, auth and compatibility sections |
+| Persistent data | Migrations, schemas, ORM configuration, durable stores | `docs/DATABASE.md`, data lifecycle and recovery sections |
+| Background processing | Queue consumers, schedulers, workflow definitions, workers | Architecture data flow, reliability and operations docs |
+| CLI | Executable manifest entry, argument parser, command tree | Command reference, usage conventions, testing docs |
+| Library or SDK | Exported public surface, packaging metadata, registry publication | API reference, compatibility policy, design and contribution docs |
+| Data or ML pipeline | DAGs, notebooks plus production pipeline code, model or dataset manifests | Pipeline architecture, data lineage, evaluation and reproducibility docs |
+| Infrastructure | Terraform, Pulumi, CDK, Kubernetes, Ansible, or primary CI/CD configuration | Deployment, topology, security, reliability, runbooks |
+| Authentication or sensitive data | Auth middleware, identity provider, secrets, regulated or personal data paths | `docs/SECURITY.md`, threat boundaries, data handling |
+| Production operations | Deploy targets, SLOs, telemetry, alerts, incident or rollback tooling | `docs/RELIABILITY.md`, `docs/DEPLOYMENT.md`, runbooks |
+| User-facing product behavior | User journeys, feature flags, UI/API behavior with product acceptance | Product specs, product principles, requirement records |
+| Complex verification | Multiple test layers, fixtures, contract/e2e/performance suites | `docs/TESTING.md`, evidence conventions |
+| Active multi-step development | Requirements, issue references, plans, cross-module changes | Requirements and execution plans |
+| Significant technical choices | Competing approaches, compatibility constraints, irreversible decisions | Decision records |
+| Monorepo | Workspace manifest or multiple independently built packages | Root architecture plus scoped package docs and nested adapters |
 
-### Data Pipeline / ML Project
-**Signals**: Jupyter notebooks, data/ directories, model training scripts, DAG definitions (Airflow, Prefect), heavy numpy/pandas/torch usage
-**Recommended docs**: ARCHITECTURE.md (pipeline stages), DATABASE.md (data sources/sinks), DESIGN.md, QUALITY_SCORE.md
-**Special**: Add data flow documentation, model versioning notes
+## Core Selection Rules
 
-### Infrastructure / DevOps
-**Signals**: Terraform/Pulumi/CDK files, Kubernetes manifests, Ansible playbooks, CI/CD configs as primary content
-**Recommended docs**: ARCHITECTURE.md (infra topology), SECURITY.md, RELIABILITY.md, DEPLOYMENT.md
-**Skip**: FRONTEND.md, API.md, PRODUCT_SENSE.md
+Create the smallest useful system:
 
----
+- Create or update a root adapter only for detected or explicitly requested agent tools.
+- Create `ARCHITECTURE.md` when cross-component boundaries, dependencies, or flows require a stable map.
+- Create a documentation index when more than a few durable docs need discovery.
+- Create requirement, decision, and execution-plan directories when active development needs traceability.
+- Create security documentation only from observed security boundaries; flag missing controls without inventing them.
+- Create quality documentation only when its claims cite actual checks or evidence. Record unavailable measurements as `unknown`.
+- Add capability-specific docs only when their content would be more durable and useful than existing code, generated reference, or a short architecture section.
 
-## Document Content Guidelines by Type
+Do not create empty files merely because a capability exists. Prefer expanding an existing canonical document when a separate file would contain only a small section.
 
-### FRONTEND.md
-- Component hierarchy and organization pattern
-- Styling approach (CSS modules, Tailwind, styled-components, etc.)
-- State management strategy
-- Routing structure
-- Key UI patterns and shared components
-- Accessibility approach
-- Performance targets (Core Web Vitals, bundle size)
+## Capability Content Prompts
 
-### API.md
-- Endpoint inventory (or pointer to generated OpenAPI spec)
-- Authentication/authorization model for API consumers
-- Request/response conventions (pagination, error format, versioning)
-- Rate limiting and quota policies
-- Key data models exposed via the API
+Use these as investigation prompts, not boilerplate headings.
 
-### DATABASE.md
-- Schema overview (entities, relationships)
-- Migration strategy and tooling
-- Query patterns and performance considerations
-- Data lifecycle (retention, archival, deletion)
-- Backup and recovery approach
+| Capability | Investigate |
+|---|---|
+| UI | route and component boundaries, state ownership, styling, accessibility, asset and build pipeline |
+| API | consumers, auth, versioning, request/response contracts, errors, pagination, rate limits |
+| Data | ownership, schema, migrations, consistency, retention, deletion, backup, restore |
+| Workers | delivery semantics, retries, idempotency, ordering, failure recovery, observability |
+| CLI | command tree, configuration precedence, exit codes, output compatibility, destructive operations |
+| Library/SDK | supported surface, compatibility guarantees, packaging, extension points, examples |
+| Data/ML | sources, transforms, lineage, evaluation, reproducibility, versioning, deployment |
+| Infrastructure | topology, environments, state, rollout, rollback, secrets, failure domains |
+| Operations | service objectives, telemetry, alerts, degradation, incidents, ownership |
+| Testing | layers, commands, fixtures, hermeticity, CI selection, known gaps |
 
-### RELIABILITY.md
-- SLA/SLO targets
-- Monitoring and alerting setup
-- Error handling and retry strategies
-- Graceful degradation patterns
-- Incident response pointers
+Reference actual repository paths and verified behavior. Link generated API or schema artifacts instead of manually duplicating them.
 
-### PRODUCT_SENSE.md
-- Target user personas
-- Core user journeys
-- Key metrics and success criteria
-- Feature prioritization framework
-- UX principles specific to this product
+## Monorepo Scoping
 
-### TESTING.md
-- Testing strategy (unit/integration/e2e ratios)
-- Test runner and framework setup
-- How to write and run tests
-- CI test pipeline
-- Mocking and fixture conventions
+Map package ownership and dependency direction at the root. Add package-local documentation or nested agent instructions only when the package has distinct commands, constraints, or architecture. Keep shared policies at the highest applicable scope and local files limited to differences.
 
-### DEPLOYMENT.md
-- Deployment pipeline stages
-- Environment configuration (dev/staging/prod)
-- Rollback procedures
-- Feature flag strategy
-- Release process
-
-### DESIGN.md
-- Code organization conventions
-- Naming patterns
-- Error handling philosophy
-- Dependency management approach
-- Key architectural patterns used (and why)
-
-### QUALITY_SCORE.md
-- Per-module/domain quality grade (A-F or similar)
-- Test coverage metrics
-- Known technical debt items
-- Areas needing improvement
-- Quality trend over time
-
-### SECURITY.md
-- Authentication and authorization model
-- Data classification and handling
-- Secret management
-- Input validation boundaries
-- Known security considerations
+When a changed path belongs to one package, inspect its declared relations and shared dependencies before expanding impact to the whole monorepo. Do not update every package document by default.

@@ -1,56 +1,435 @@
 {
   "skill_name": "docs-architect",
+  "schema_version": 2,
+  "fixture_root": "evals/fixtures",
   "evals": [
     {
       "id": 1,
-      "prompt": "帮我给这个 NestJS 后端项目生成完整的文档结构，让 AI 编码工具能更好地理解这个项目",
-      "expected_output": "Should generate an appropriate root entry-point file (CLAUDE.md or AGENTS.md), ARCHITECTURE.md, and docs/ directory with API.md, DESIGN.md, SECURITY.md, TESTING.md, QUALITY_SCORE.md. Should detect NestJS backend type and skip FRONTEND.md. Content should reference actual NestJS modules and services found in the project.",
-      "files": ["D:\\ProjectFiles\\NestJSProjects\\nestjs_test_01"],
+      "name": "trigger-explicit-initialize",
+      "category": "trigger-explicit",
+      "should_trigger": true,
+      "mode": "init",
+      "prompt": "Use the docs-architect skill to initialize an agent-legible documentation system for this project.",
+      "expected_output": "Initialize the smallest useful documentation system for the Express TypeScript API while preserving README.md and deriving facts from package.json and src/server.ts.",
+      "files": ["evals/fixtures/initial-api"],
+      "expectations": [
+        "Invokes docs-architect because the skill is named explicitly",
+        "Selects initialize mode because no managed documentation system exists",
+        "Creates a concise root adapter, ARCHITECTURE.md, and only relevant API documentation",
+        "References the actual /health route and npm commands instead of generic framework advice",
+        "Preserves the existing README.md without wholesale replacement"
+      ],
       "assertions": [
-        {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
-        {"name": "architecture-exists", "description": "Generated an ARCHITECTURE.md file", "type": "file_exists"},
-        {"name": "docs-dir-exists", "description": "Generated a docs/ directory with at least 2 files", "type": "directory_exists"},
-        {"name": "project-type-correct", "description": "Correctly identified as backend: has API.md or similar, does NOT have FRONTEND.md", "type": "content_check"},
-        {"name": "content-is-specific", "description": "Documentation references actual project files/modules", "type": "content_check"},
-        {"name": "cross-links-valid", "description": "Every document mentioned in the entry-point file actually exists", "type": "structural_check"}
+        {"name": "explicit-trigger", "description": "Invokes docs-architect because the user names it explicitly", "type": "content_check"},
+        {"name": "portable-fixture", "description": "Uses only the repository-relative fixture path", "type": "structural_check"},
+        {"name": "project-specific-initialize", "description": "Creates proportional docs grounded in package.json and src/server.ts", "type": "content_check"}
       ]
     },
     {
       "id": 2,
-      "prompt": "这个 Vue 管理后台项目需要文档，请帮我创建一个完整的渐进式披露文档体系",
-      "expected_output": "Should generate an appropriate root entry-point file (CLAUDE.md or AGENTS.md), ARCHITECTURE.md, and docs/ with FRONTEND.md, DESIGN.md, SECURITY.md, QUALITY_SCORE.md, PRODUCT_SENSE.md. Should detect Vue3 + Vite frontend type.",
-      "files": ["D:\\ProjectFiles\\WebProjects\\Geeker-Admin"],
+      "name": "trigger-implicit-agent-docs",
+      "category": "trigger-implicit",
+      "should_trigger": true,
+      "mode": "init",
+      "prompt": "Set up lightweight project docs so coding agents can quickly understand this Vue application.",
+      "expected_output": "Recognize an implicit docs-architecture request and create a proportional frontend-oriented documentation map grounded in the Vue source.",
+      "files": ["evals/fixtures/initial-ui"],
+      "expectations": [
+        "Invokes docs-architect without requiring the skill name",
+        "Detects Vue and Vite from repository evidence",
+        "Creates frontend documentation but does not invent an API, database, deployment, or security architecture",
+        "Keeps the root adapter concise and points it to shared project documentation"
+      ],
       "assertions": [
-        {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
-        {"name": "frontend-doc-exists", "description": "Generated a FRONTEND.md covering frontend-specific concerns", "type": "file_exists"},
-        {"name": "no-irrelevant-backend-docs", "description": "Does NOT generate DATABASE.md for a frontend-only project", "type": "content_check"},
-        {"name": "content-is-specific", "description": "Documentation mentions actual tech stack: Vue3, Vite, Pinia, TypeScript", "type": "content_check"},
-        {"name": "design-system-covered", "description": "FRONTEND.md or DESIGN.md covers component organization, routing, or state management", "type": "content_check"},
-        {"name": "cross-links-valid", "description": "Every document mentioned in the entry-point file actually exists", "type": "structural_check"}
+        {"name": "implicit-trigger", "description": "Invokes docs-architect without the skill name", "type": "content_check"},
+        {"name": "frontend-capability", "description": "Detects Vue and Vite and avoids unsupported backend documents", "type": "content_check"}
       ]
     },
     {
       "id": 3,
-      "prompt": "set up docs for this project so AI agents can understand it better",
-      "expected_output": "Should generate a minimal but useful doc set appropriate for a tiny Express project. Should NOT over-generate. The chosen root entry-point file should be concise.",
-      "files": ["D:\\ProjectFiles\\ExpressProjects\\expressjs_test_01"],
+      "name": "trigger-contextual-doc-sync",
+      "category": "trigger-contextual",
+      "should_trigger": true,
+      "mode": "sync",
+      "prompt": "The health response now includes the deployed version. Keep the project knowledge current before I hand this change off.",
+      "expected_output": "Infer incremental documentation synchronization from the managed repository context and update only the affected API material.",
+      "files": ["evals/fixtures/sync-stale"],
+      "expectations": [
+        "Invokes docs-architect from the contextual request to keep project knowledge current",
+        "Selects sync rather than reinitializing or regenerating all documentation",
+        "Uses src/api.py and declared metadata relationships to identify docs/API.md",
+        "Leaves AGENTS.md and unrelated documentation unchanged"
+      ],
       "assertions": [
-        {"name": "entry-point-exists", "description": "Generated a CLAUDE.md or AGENTS.md entry-point file", "type": "file_exists"},
-        {"name": "proportional-output", "description": "Generated a reasonable number of docs (not more than 6-7 files total)", "type": "structural_check"},
-        {"name": "content-not-boilerplate", "description": "Documentation references actual code from index.js", "type": "content_check"},
-        {"name": "entry-point-concise", "description": "Entry-point file is concise and proportional to project size (under 80 lines)", "type": "content_check"}
+        {"name": "contextual-trigger", "description": "Infers documentation synchronization from project knowledge context", "type": "content_check"},
+        {"name": "targeted-sync", "description": "Updates only the affected API documentation", "type": "structural_check"}
       ]
     },
     {
       "id": 4,
-      "prompt": "这个 Express 项目团队同时使用 Claude Code 和 Codex，请同时生成 CLAUDE.md 和 AGENTS.md，并让它们指向同一套 docs/",
-      "expected_output": "Should generate both CLAUDE.md and AGENTS.md, keep their documentation maps and architecture pointers aligned, and write a shared docs/ structure without vendor-specific drift in the common sections.",
-      "files": ["D:\\ProjectFiles\\ExpressProjects\\expressjs_test_01"],
+      "name": "trigger-negative-code-fix",
+      "category": "trigger-negative",
+      "should_trigger": false,
+      "mode": "none",
+      "prompt": "Refactor the pagination helper internals for readability and add a regression test. Public behavior, APIs, architecture, commands, and constraints remain unchanged.",
+      "expected_output": "Do not invoke docs-architect merely because source and test files changed; no durable documented truth changed.",
+      "files": ["evals/fixtures/code-task"],
+      "expectations": [
+        "Does not invoke docs-architect for an internal refactor with unchanged durable truth",
+        "Does not create a documentation scaffold as a side effect of a code-only task",
+        "Uses behavior and architecture impact rather than touched-file presence as the trigger boundary"
+      ],
       "assertions": [
-        {"name": "both-entry-files-exist", "description": "Generated both CLAUDE.md and AGENTS.md", "type": "file_exists"},
-        {"name": "entry-files-aligned", "description": "CLAUDE.md and AGENTS.md point to the same core docs and architecture file", "type": "content_check"},
-        {"name": "shared-doc-map", "description": "Both root files reference the same docs/ document set", "type": "structural_check"},
-        {"name": "limited-tool-specific-differences", "description": "Differences between the two root files are limited to small tool-specific notes", "type": "content_check"}
+        {"name": "negative-trigger", "description": "Does not invoke docs-architect for the scoped code-only task", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "trigger-negative-personal-notes",
+      "category": "trigger-negative",
+      "should_trigger": false,
+      "mode": "none",
+      "prompt": "Turn these meeting notes into a clear one-page summary for the attendees.",
+      "expected_output": "Do not invoke docs-architect because the request concerns a standalone prose document, not a repository knowledge system.",
+      "files": [],
+      "expectations": [
+        "Does not invoke docs-architect",
+        "Does not assume the notes belong in a project docs/ hierarchy"
+      ],
+      "assertions": [
+        {"name": "negative-trigger", "description": "Does not invoke docs-architect for a standalone prose summary", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "trigger-negative-readme-typo",
+      "category": "trigger-negative",
+      "should_trigger": false,
+      "mode": "none",
+      "prompt": "Correct the misspelling 'dependancies' in README.md. Make no other edits.",
+      "expected_output": "Perform or propose only the one-line typo correction without activating the documentation lifecycle workflow.",
+      "files": ["evals/fixtures/initial-api"],
+      "expectations": [
+        "Does not invoke docs-architect for a trivial constrained text edit",
+        "Does not add metadata, indexes, adapters, or new documentation"
+      ],
+      "assertions": [
+        {"name": "negative-trigger", "description": "Does not invoke docs-architect for a constrained typo fix", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "audit-read-only",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "audit",
+      "prompt": "Audit the current project documentation for broken links, stale anchors, traceability gaps, and cross-tool drift. Report only; do not edit anything.",
+      "expected_output": "Produce a read-only audit that identifies the missing deployment link, nonexistent source anchor, unsupported done state, and AGENTS/CLAUDE drift without changing the fixture.",
+      "files": ["evals/fixtures/audit-broken"],
+      "expectations": [
+        "Takes a before/after worktree snapshot or otherwise verifies that audit made no file changes",
+        "Reports the missing docs/DEPLOYMENT.md link",
+        "Reports the nonexistent src/legacy.py source anchor",
+        "Reports that REQ-2026-004 is done without completed acceptance evidence or a documentation disposition",
+        "Reports that CLAUDE.md points to a different documentation map than AGENTS.md",
+        "Separates structural errors from advisory freshness findings"
+      ],
+      "assertions": [
+        {"name": "audit-read-only", "description": "Produces no fixture changes", "type": "structural_check"},
+        {"name": "audit-findings", "description": "Reports the seeded link, source, lifecycle, and adapter issues", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "intake-stable-requirement",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "intake",
+      "prompt": "Record a new requirement: operators need a readiness endpoint that returns HTTP 503 until the database is reachable. Source is this conversation. Acceptance: GET /ready returns 503 before database readiness and 200 after readiness. We have not approved an implementation design yet.",
+      "expected_output": "Create one governed requirement with the next stable ID, explicit acceptance criteria, affected code/docs, and unresolved design questions while leaving approval and implementation details unclaimed.",
+      "files": ["evals/fixtures/intake-ready"],
+      "expectations": [
+        "Creates docs/requirements/REQ-2026-002.md because REQ-2026-001 already exists",
+        "Uses status intake or clarifying rather than accepted",
+        "Records the conversation as origin and preserves the two observable acceptance outcomes",
+        "Identifies src/api.py and docs/API.md as affected candidates",
+        "Marks the database readiness mechanism as unresolved instead of inventing a design",
+        "Updates only the requirement index or other deterministic trace index needed for discovery"
+      ],
+      "assertions": [
+        {"name": "stable-id", "description": "Allocates REQ-2026-002 without reusing an ID", "type": "content_check"},
+        {"name": "intake-not-approved", "description": "Records unresolved design questions without inventing approval", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 9,
+      "name": "sync-targeted-update",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "sync",
+      "prompt": "Sync documentation with the current implementation. The only behavior change is already present in src/api.py.",
+      "expected_output": "Update the stale health-response contract in docs/API.md and relevant verification metadata without rewriting unrelated files.",
+      "files": ["evals/fixtures/sync-stale"],
+      "expectations": [
+        "Inspects repository state and uses declared source anchors before editing",
+        "Changes docs/API.md to document both status and version fields",
+        "Does not rewrite AGENTS.md, docs/SECURITY.md, or the requirement acceptance criteria",
+        "Does not invent a verification revision when no revision evidence is available",
+        "Runs the deterministic check after the scoped update"
+      ],
+      "assertions": [
+        {"name": "api-updated", "description": "Updates the health response contract in docs/API.md", "type": "content_check"},
+        {"name": "unrelated-files-preserved", "description": "Leaves unrelated adapters and security docs unchanged", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 10,
+      "name": "sync-idempotent-repeat",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "sync",
+      "prompt": "Run docs sync again. There have been no code, requirement, or decision changes since the last successful sync.",
+      "expected_output": "Inspect the already aligned repository, report that no documentation update is needed, and produce no material diff.",
+      "files": ["evals/fixtures/sync-aligned"],
+      "expectations": [
+        "Does not rewrite documents merely to refresh prose or timestamps",
+        "Does not change deterministic indexes when their content is already current",
+        "Does not invent a new verified_at or verified_against value",
+        "Leaves the entire fixture byte-for-byte unchanged"
+      ],
+      "assertions": [
+        {"name": "idempotent-sync", "description": "Produces no material diff on repeated identical input", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 11,
+      "name": "check-structural-errors",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "check",
+      "prompt": "Run the deterministic documentation check and give me automation-friendly results.",
+      "expected_output": "Run check with JSON output, return a non-zero structural result, and identify duplicate IDs, a broken local link, an unknown relation target, and unsupported completion evidence.",
+      "files": ["evals/fixtures/check-invalid"],
+      "expectations": [
+        "Uses the bundled deterministic tool in check mode with JSON output",
+        "Returns or reports a non-zero exit status for structural errors",
+        "Finds duplicate ID ADR-0001",
+        "Finds the broken docs/MISSING.md link and relation target DOC-MISSING",
+        "Rejects the done requirement whose acceptance item is incomplete and lacks evidence",
+        "Does not mutate files while checking"
+      ],
+      "assertions": [
+        {"name": "nonzero-check", "description": "Reports a non-zero structural validation result", "type": "content_check"},
+        {"name": "seeded-errors", "description": "Finds duplicate ID, broken link, missing relation target, and invalid completion", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 12,
+      "name": "close-rejects-missing-evidence",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "close",
+      "prompt": "Mark REQ-2026-003 done; implementation should be finished by now.",
+      "expected_output": "Refuse to move the requirement to done because its second acceptance criterion has no completed status or evidence and documentation disposition is unresolved.",
+      "files": ["evals/fixtures/close-incomplete"],
+      "expectations": [
+        "Inspects the requirement acceptance items and evidence rather than trusting 'should be finished'",
+        "Leaves REQ-2026-003 in verifying state",
+        "Identifies AC-2 as incomplete and unsupported",
+        "Identifies the missing documentation disposition",
+        "Does not fabricate test results, approvals, owners, commits, or timestamps"
+      ],
+      "assertions": [
+        {"name": "close-rejected", "description": "Keeps the requirement open when evidence and documentation disposition are incomplete", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 13,
+      "name": "cross-tool-thin-adapters",
+      "category": "cross-tool",
+      "should_trigger": true,
+      "mode": "sync",
+      "prompt": "Our team uses Codex and Claude Code. Reconcile their project instructions so both tools discover the same sources of truth without maintaining duplicate project manuals.",
+      "expected_output": "Reduce AGENTS.md and CLAUDE.md to concise adapters that retain tool-specific constraints and point to the same shared architecture and documentation index.",
+      "files": ["evals/fixtures/cross-tool"],
+      "expectations": [
+        "Preserves the Codex-specific test command and the Claude-specific permission note",
+        "Moves or retains shared system facts in docs/ and ARCHITECTURE.md rather than duplicating them",
+        "Makes both root adapters point to the same docs/index.md and ARCHITECTURE.md",
+        "Does not require vendor-specific hooks for shared behavior",
+        "Keeps adapter differences limited to genuine tool-specific instructions"
+      ],
+      "assertions": [
+        {"name": "shared-truth", "description": "Both adapters point to the same architecture and docs index", "type": "structural_check"},
+        {"name": "tool-notes-preserved", "description": "Preserves genuine Codex and Claude-specific constraints", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 14,
+      "name": "cursor-scoped-adapter",
+      "category": "cross-tool",
+      "should_trigger": true,
+      "mode": "sync",
+      "prompt": "Add Cursor support to this managed repository. Keep shared project facts in the existing docs and scope the frontend-only rule to src/ui/**.",
+      "expected_output": "Create or update a concise Cursor rule with appropriate path scope and links to shared documentation, without copying the project manual into .cursor/rules.",
+      "files": ["evals/fixtures/cursor-adapter"],
+      "expectations": [
+        "Uses a .cursor/rules/*.mdc adapter and preserves the existing AGENTS.md adapter",
+        "Scopes the frontend rule to src/ui/**",
+        "Points Cursor to docs/index.md and docs/FRONTEND.md for shared facts",
+        "Does not duplicate architecture, commands, and repository maps in the Cursor rule",
+        "Updates the adapters configuration consistently"
+      ],
+      "assertions": [
+        {"name": "cursor-rule-scoped", "description": "Creates a Cursor adapter scoped to src/ui/**", "type": "content_check"},
+        {"name": "cursor-thin-adapter", "description": "Links shared docs without copying the project manual", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 15,
+      "name": "sync-no-document-change",
+      "category": "incremental-safety",
+      "should_trigger": true,
+      "mode": "sync",
+      "prompt": "Sync docs for REQ-2026-005. The implementation diff only changes internal log field ordering in src/logging.py; public behavior and operations are unchanged.",
+      "expected_output": "Determine that no system document is affected, preserve existing docs, and record a specific no-document-change disposition on the requirement rather than making cosmetic edits.",
+      "files": ["evals/fixtures/no-doc-change"],
+      "expectations": [
+        "Reviews explicit source mappings and the stated semantic context",
+        "Does not edit docs/API.md or docs/OPERATIONS.md",
+        "Records documentation_disposition as no_change_required with a concrete reason on REQ-2026-005",
+        "Does not use a generic unsupported claim such as 'docs not needed'",
+        "Keeps the requirement out of done unless all other close evidence is complete"
+      ],
+      "assertions": [
+        {"name": "no-cosmetic-doc-edit", "description": "Leaves system docs unchanged", "type": "structural_check"},
+        {"name": "no-change-reason", "description": "Records a concrete no_change_required disposition", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 16,
+      "name": "impact-explicit-and-related",
+      "category": "deterministic-impact",
+      "should_trigger": true,
+      "mode": "audit",
+      "prompt": "Show the documentation impact of src/payments/service.py changing. Use the deterministic impact analysis first, then distinguish any semantic suggestions.",
+      "expected_output": "Report DOC-PAYMENTS by explicit source match and REQ-2026-006 through its declared relation, exclude auth documentation, and label any model-inferred candidates as advisory.",
+      "files": ["evals/fixtures/impact-map"],
+      "expectations": [
+        "Runs deterministic impact analysis for src/payments/service.py",
+        "Reports docs/PAYMENTS.md from the src/payments/** source pattern",
+        "Traverses the declared relation to report REQ-2026-006",
+        "Does not report docs/AUTH.md as a deterministic match",
+        "Keeps semantic candidates separate and advisory"
+      ],
+      "assertions": [
+        {"name": "explicit-impact", "description": "Reports payments documentation from its source pattern", "type": "content_check"},
+        {"name": "relation-impact", "description": "Traverses the relation to REQ-2026-006 without deterministically including auth docs", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 17,
+      "name": "garden-targeted-maintenance",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "garden",
+      "prompt": "Garden the documentation knowledge base. Find stale verification, orphaned artifacts, and superseded material, but make only low-risk deterministic index updates and give me cleanup suggestions for the rest.",
+      "expected_output": "Identify the old verification anchor, orphan ADR, and superseded requirement; avoid silently deleting historical artifacts; update only deterministic indexes when needed.",
+      "files": ["evals/fixtures/garden"],
+      "expectations": [
+        "Reports DOC-RUNTIME as needing freshness review because its verified revision is no longer supported",
+        "Reports ADR-0007 as orphaned",
+        "Recognizes REQ-2025-009 as superseded by REQ-2026-007",
+        "Does not delete or rewrite historical artifacts without explicit authorization",
+        "Limits mutations to deterministic index maintenance"
+      ],
+      "assertions": [
+        {"name": "garden-findings", "description": "Reports stale, orphaned, and superseded artifacts", "type": "content_check"},
+        {"name": "history-preserved", "description": "Does not delete historical artifacts", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 18,
+      "name": "initialize-preserves-existing-instructions",
+      "category": "incremental-safety",
+      "should_trigger": true,
+      "mode": "init",
+      "prompt": "Initialize docs-architect here, but preserve our existing AGENTS.md release rule and do not overwrite any current document.",
+      "expected_output": "Add only missing configuration and documentation scaffolding, augment the existing adapter in place, and preserve all existing instructions and documents.",
+      "files": ["evals/fixtures/initialize-existing"],
+      "expectations": [
+        "Inspects dirty or existing repository state before writing",
+        "Preserves the exact release rule in AGENTS.md",
+        "Preserves docs/OPERATIONS.md content",
+        "Adds only missing configuration, indexes, links, or directories",
+        "A repeated initialize invocation would make no material changes"
+      ],
+      "assertions": [
+        {"name": "existing-content-preserved", "description": "Preserves the release rule and operations guide", "type": "content_check"},
+        {"name": "initialize-idempotent", "description": "Adds only missing governance content and is repeatable", "type": "structural_check"}
+      ]
+    },
+    {
+      "id": 19,
+      "name": "create-product-spec-boundary",
+      "category": "artifact-boundary",
+      "should_trigger": true,
+      "mode": "intake",
+      "prompt": "Record a new readiness-endpoint requirement and capture its observable behavior as a linked product specification. Before database readiness GET /ready returns HTTP 503; after readiness it returns HTTP 200. Do not put implementation choices or task progress in the spec.",
+      "expected_output": "Create both a governed requirement and a linked product specification from the bundled templates; the specification owns behavior, limits, and exceptional cases while approval remains in the requirement and technical rationale belongs in a decision record.",
+      "files": ["evals/fixtures/intake-ready"],
+      "expectations": [
+        "Creates REQ-2026-002 and uses assets/templates/product-spec.md rather than inventing a schema",
+        "Records HTTP 503 before readiness and HTTP 200 after readiness as observable scenarios",
+        "Links the product spec and requirement with stable IDs",
+        "Keeps implementation design and execution progress out of the product spec"
+      ],
+      "assertions": [
+        {"name": "product-spec-template", "description": "Uses governed product-spec metadata and sections", "type": "structural_check"},
+        {"name": "artifact-boundary", "description": "Keeps behavior separate from approval, rationale, and progress", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 20,
+      "name": "create-evidence-manifest",
+      "category": "artifact-boundary",
+      "should_trigger": true,
+      "mode": "close",
+      "prompt": "Create a durable evidence manifest for the export requirement from results that actually exist in this repository. Keep unsupported checks explicit and do not close the requirement unless every gate passes.",
+      "expected_output": "Use the bundled evidence template to record reproducible claims, procedures, captured results, immutable revision context, and limitations without converting planned or missing checks into proof.",
+      "files": ["evals/fixtures/close-incomplete"],
+      "expectations": [
+        "Uses assets/templates/evidence.md rather than inventing a schema",
+        "References only existing test or captured-result paths",
+        "Records limitations for the unsupported embedded-newline criterion",
+        "Links evidence with a validates relation and leaves REQ-2026-003 open"
+      ],
+      "assertions": [
+        {"name": "evidence-template", "description": "Uses governed evidence metadata and reproducibility sections", "type": "structural_check"},
+        {"name": "no-fabricated-proof", "description": "Does not treat planned or missing verification as evidence", "type": "content_check"}
+      ]
+    },
+    {
+      "id": 21,
+      "name": "close-complete-requirement",
+      "category": "mode-behavior",
+      "should_trigger": true,
+      "mode": "close",
+      "prompt": "Verify and close REQ-2026-011 if every acceptance, evidence, dependency, documentation, and stable-revision gate passes. Run the available tests; do not waive any gate.",
+      "expected_output": "Run the export tests, confirm the documented requirement has complete resolvable evidence and no open gate, transition only its status to done, update deterministic indexes, and finish with a passing check.",
+      "files": ["evals/fixtures/close-ready"],
+      "expectations": [
+        "Runs both export tests and observes a passing result",
+        "Confirms both acceptance items already have resolvable evidence",
+        "Confirms documentation_disposition=updated and docs/API.md is an active governed system-doc",
+        "Confirms verified_at and a resolvable SHA-256 verified_against are present",
+        "Confirms top-level command evidence captures the executed test result",
+        "Changes REQ-2026-011 from documented to done without altering acceptance text",
+        "Runs check and deterministic index maintenance after the transition"
+      ],
+      "assertions": [
+        {"name": "close-success", "description": "Transitions the fully evidenced requirement to done", "type": "content_check"},
+        {"name": "close-minimal-diff", "description": "Preserves acceptance and changes only supported lifecycle/index content", "type": "structural_check"}
       ]
     }
   ]

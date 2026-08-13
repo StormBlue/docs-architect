@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "docs_roots": ["docs", "ARCHITECTURE.md"],
+  "exclude": [],
+  "adapters": {"codex": ["AGENTS.md"]},
+  "generated_dir": "docs/generated"
+}

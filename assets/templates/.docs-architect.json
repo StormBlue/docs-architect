@@ -1,0 +1,16 @@
+{
+  "adapters": {},
+  "docs_roots": [
+    "docs"
+  ],
+  "exclude": [
+    ".git/**",
+    ".venv/**",
+    "build/**",
+    "dist/**",
+    "node_modules/**",
+    "vendor/**"
+  ],
+  "generated_dir": "docs/generated",
+  "schema_version": 1
+}
