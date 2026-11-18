@@ -17,6 +17,10 @@ Use this reference to select and execute one primary operating mode. Keep every 
 - [Mutation And Idempotence Rules](#mutation-and-idempotence-rules)
 - [Result Contract](#result-contract)
 
+## Scope of assurance
+
+`assess --base <ref>` includes committed, staged, unstaged and untracked paths as well as any explicit `--changed` additions. Use the branch point for a feature branch. It returns `docs-architect.assessment.v1`, never a successful legacy audit receipt. Nonzero means inspect `blocking` or `unknown`: stop only the affected operation. `audit_ok` refers to current structural checks, not permission to retire a governed document or proof of behavior. `check`, `impact` and `index` keep their strict contracts. Strict is the compatibility default; `"change_policy":"scoped"` in the existing project configuration opts into scoped integration. Do not change policy to bypass a failed check.
+
 ## Common Preflight
 
 Before all modes:
@@ -137,7 +141,7 @@ Reject unsupported completion claims.
 3. Verify every acceptance item independently. Require `passed` or `not_applicable` status and at least one resolvable evidence reference per item; evidence for `not_applicable` must justify why the approved criterion does not apply.
 4. Confirm linked implementation, validation, decision, and `system-doc` artifacts exist where required.
 5. Confirm documentation disposition:
-   - list at least one scanned, governed `system-doc` with `status: "active"` that was updated to current truth; unmanaged documents, non-active system docs, lifecycle artifacts, adapters, navigation indexes, and generated indexes do not satisfy this gate; or
+   - list at least one scanned, governed `system-doc` (or `product-spec` under `change_policy: scoped`) with `status: "active"` that was updated to current truth; unmanaged documents, non-active system docs, lifecycle artifacts, adapters, navigation indexes, and generated indexes do not satisfy this gate; or
    - set `documentation_disposition` to `no_change_required` and record a concrete `no_doc_change_reason`.
 6. Run relevant project verification commands when authorized and feasible. Save the actual command and observed result in a repository-relative evidence artifact and reference it from top-level requirement evidence; a test source reference alone does not prove execution.
 7. Move through `verifying` and `documented` as evidence permits. Set `done` only after every gate passes.

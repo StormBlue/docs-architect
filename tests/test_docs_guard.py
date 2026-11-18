@@ -88,6 +88,64 @@ class DocsGuardTestCase(unittest.TestCase):
     def write_artifact(self, relative: str, metadata: dict[str, object], body: str = "") -> Path:
         return self.write(relative, metadata_comment(metadata) + "\n" + body)
 
+    def commit_fixture(self) -> None:
+        for cmd in (["init", "-q"], ["add", "."], ["-c", "user.name=Fixture", "-c", "user.email=test@example.test", "commit", "-qm", "baseline"]):
+            subprocess.run(["git", *cmd], cwd=self.root, check=True, capture_output=True)
+
+    def test_assess_separates_background_debt_and_full_index_gate(self) -> None:
+        self.write_artifact("docs/legacy.md", system_doc(id="SYS-legacy", title="", sources=["old/**"]))
+        self.write("docs/how-to.md", "# Plain Markdown")
+        self.commit_fixture()
+        self.write("src/fix.py", "FIX = True")
+        result, code = docs_guard.run_assess(self.root, ["src/fix.py"], None)
+        self.assertEqual(code, 0, result)
+        self.assertEqual(result["decision"], "continue_with_debt")
+        self.assertFalse(result["audit_ok"])
+        self.assertEqual({row["path"] for row in result["background"]}, {"docs/legacy.md"})
+        self.assertEqual(len(result["file_digests"]["src/fix.py"]), 64)
+        self.assertEqual(docs_guard.run_check(self.root)[1], 1)
+        self.assertEqual(docs_guard.run_index(self.root, True)[1], 1)
+        self.write("docs/legacy.md", "# plain now")
+        result, code = docs_guard.run_assess(self.root, ["src/fix.py"], None)
+        self.assertEqual(code, 1, result)
+        self.assertIn("managed_marker_removed", {r["code"] for r in result["blocking"]})
+
+    def test_assess_linked_artifact_and_missing_baseline_are_not_clean(self) -> None:
+        self.write_artifact("docs/api.md", system_doc(title=""))
+        self.commit_fixture()
+        self.write("src/api/entry.py", "value = 1")
+        result, code = docs_guard.run_assess(self.root, None, "HEAD")
+        self.assertEqual(code, 1)
+        self.assertTrue(result["can_implement"])
+        self.assertIn("docs/api.md", {r.get("path") for r in result["blocking"]})
+        result, code = docs_guard.run_assess(self.root, ["src/api/entry.py"], "not-a-ref")
+        self.assertEqual(code, 1)
+        self.assertIn("baseline_unknown", {r["code"] for r in result["unknown"]})
+
+    def test_opaque_historical_identity_does_not_certify_or_stop_implementation(self) -> None:
+        self.write_artifact("docs/old.md", {"schema_version": 1, "id": "SYS-legacy"})
+        self.commit_fixture()
+        self.write("src/new.py", "value = 1")
+        result, code = docs_guard.run_assess(self.root, None, None)
+        self.assertEqual(code, 1, result)
+        self.assertTrue(result["can_implement"])
+        self.assertFalse(result["can_close_docs"])
+        self.assertIn("docs/old.md", {r.get("path") for r in result["unknown"]})
+        (self.root / "docs/old.md").write_bytes(b"\xff")
+        result, code = docs_guard.run_assess(self.root, None, None)
+        self.assertEqual(code, 1)
+        self.assertIn("unreadable_managed_file", {r["code"] for r in result["unknown"]})
+
+    def test_scoped_product_spec_can_own_updated_behavior(self) -> None:
+        self.write_artifact("docs/SYSTEM.md", system_doc(type="product-spec"))
+        self.write_artifact("docs/req.md", base_requirement(documentation_disposition="updated", affected_code=["src/api/x.py"]))
+        self.assertIn("missing_current_state_affected_doc", {f["code"] for f in docs_guard.run_check(self.root)[0]["findings"]})
+        config = self.root / docs_guard.CONFIG_NAME
+        config.write_text(json.dumps(dict(json.loads(config.read_text()), change_policy="scoped")), encoding="utf-8")
+        self.assertNotIn("missing_current_state_affected_doc", {f["code"] for f in docs_guard.run_check(self.root)[0]["findings"]})
+        config.write_text(json.dumps(dict(json.loads(config.read_text()), change_policy="typo")), encoding="utf-8")
+        self.assertEqual(docs_guard.run_check(self.root)[1], 1)
+
     def sha256_revision(self, relative: str) -> str:
         path = self.root / relative
         digest = docs_guard.hashlib.sha256(path.read_bytes()).hexdigest()

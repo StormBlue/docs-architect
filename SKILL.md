@@ -25,6 +25,12 @@ Default a generic invocation in an initialized repository to `sync`. Default a g
 
 After selecting, read only `Common Preflight`, the selected mode, and `Result Contract` in [workflows.md](references/workflows.md). Also read `Deterministic Tool Use` for tool-backed modes and `Mutation And Idempotence Rules` for write modes. Do not load unrelated mode sections.
 
+## Decide what the finding actually blocks
+
+Ordinary Markdown does not need governance metadata. Keep root instructions as a map to the current build/test commands and authoritative docs. Never retrofit a legacy archive or open a second change merely to unblock an unrelated fix. When another workflow owns implementation, answer its documentation question and return; do not restart intake or close.
+
+For everyday changes use `assess --base <revision> --json` (read-only, uses HEAD by default). It reports `can_implement`, `can_close_docs`, debt and unknowns separately; its exit code is **documentation readiness**, not permission to stop coding. Unchanged unrelated field errors belong to the backlog. Repair a changed or dependent document before certifying it. Missing baseline or opaque dependencies mean unknown, not passed. A removed marker on an existing governed file requires explicit review. Use `check` for a full audit and `index --write` only to publish a clean index. Do not overwrite the last good index on failure.
+
 ## Establish Context
 
 Before any write:
@@ -85,7 +91,7 @@ For every write workflow:
 4. Review semantic candidates that deterministic matching cannot prove.
 5. Edit only confirmed affected content and required indexes or adapters.
 6. Record a justified no-document-change disposition when behavior and documented truth did not change.
-7. Run `check`, preview `index`, then write the index only when its diff is expected.
+7. Use `assess` for the current change; for full audits or strict close run `check`. Preview/publish the full index only if the workflow actually needs it.
 8. Inspect the final diff for scope, evidence, broken links, accidental rewrites, and adapter drift.
 9. Re-run the same analysis mentally or with preview commands; with no new input, it must produce no material diff.
 

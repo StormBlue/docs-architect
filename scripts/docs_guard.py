@@ -400,6 +400,8 @@ def validate_config(config: Any) -> list[Finding]:
                 CONFIG_NAME,
             )
         )
+    if config.get("change_policy", "strict") not in ("strict", "scoped"):
+        findings.append(Finding("error", "invalid_config", "change_policy must be strict or scoped", CONFIG_NAME))
     for key in ("docs_roots", "exclude"):
         value = config.get(key)
         if (
@@ -1896,7 +1898,7 @@ def validate_documentation_dispositions(
     artifacts: Sequence[Artifact],
     markdown_files: Sequence[Path],
     root: Path,
-    _config: dict[str, Any],
+    config: dict[str, Any],
 ) -> list[Finding]:
     scanned_paths = {relative_path(path, root) for path in markdown_files}
     artifacts_by_path = {artifact.relative_path: artifact for artifact in artifacts}
@@ -1930,7 +1932,10 @@ def validate_documentation_dispositions(
             referenced_artifact = artifacts_by_path.get(normalized)
             if (
                 referenced_artifact is not None
-                and referenced_artifact.metadata.get("type") == "system-doc"
+                and (referenced_artifact.metadata.get("type") == "system-doc" or (
+                    config.get("change_policy") == "scoped"
+                    and referenced_artifact.metadata.get("type") == "product-spec"
+                ))
                 and referenced_artifact.metadata.get("status") == "active"
                 and system_doc_covers_requirement(
                     referenced_artifact, artifact
@@ -1943,7 +1948,7 @@ def validate_documentation_dispositions(
                     "error",
                     "missing_current_state_affected_doc",
                     "documentation_disposition=updated requires at least one scanned "
-                    "active governed system-doc; unmanaged documents, non-active system "
+                    "active governed system-doc (or relevant active product-spec in scoped mode); unmanaged documents, non-active system "
                     "docs, lifecycle artifacts, adapters, and indexes do not satisfy the "
                     "documentation completion gate.",
                     artifact.relative_path,
@@ -2277,7 +2282,7 @@ def run_impact(
             {
                 changed_path
                 for changed_path in changed_files
-                if any(matches_pattern(changed_path, pattern) for pattern in patterns)
+                if changed_path == artifact.relative_path or any(matches_pattern(changed_path, pattern) for pattern in patterns)
             }
         )
         if matches and artifact.artifact_id:
@@ -2349,6 +2354,104 @@ def run_impact(
         "semantic_review_recommended": bool(unmatched),
         "findings": [item.as_dict() for item in findings],
     }, 1 if any(item.severity == "error" for item in findings) else 0
+
+
+def assessment_base(root: Path, base: str | None) -> str | None:
+    """Only trust a real merge-base from this worktree; never treat a missing base as clean."""
+    try:
+        def git(*args: str) -> str:
+            result = subprocess.run(["git", *args], cwd=root, capture_output=True, check=True)
+            return result.stdout.decode("utf-8").strip()
+        if Path(git("rev-parse", "--show-toplevel")).resolve() != root.resolve():
+            return None
+        ref = git("rev-parse", "--verify", "--end-of-options", (base or "HEAD") + "^{commit}")
+        return git("merge-base", ref, "HEAD")
+    except (OSError, UnicodeError, subprocess.CalledProcessError):
+        return None
+
+
+def run_assess(root: Path, changed: Sequence[str] | None, base: str | None) -> tuple[dict[str, Any], int]:
+    """Action-specific diagnostics. Not a replacement for check or a certificate for index."""
+    oid = assessment_base(root, base)
+    delta, git_issues = git_changed_files(root, oid) if oid else ([], [])
+    reported_paths = sorted(set(delta) | set(changed or []))
+    report, _ = run_impact(root, reported_paths or None, oid)
+    changed_set = set(report.get("changed_files", []))
+    affected = {doc["path"] for doc in report.get("affected_documents", [])}
+    affected_ids = {doc["id"] for doc in report.get("affected_documents", [])}
+    errors = [row for row in report["findings"] if row["severity"] == "error"]
+    blocking, background, unknown = [], [], []
+    if not oid or git_issues:
+        unknown.append({"code": "baseline_unknown", "message": "Supply a valid revision in the target Git worktree."})
+    for row in errors:
+        path = row.get("path")
+        if path in changed_set | affected or row.get("artifact_id") in affected_ids or not path or path == CONFIG_NAME:
+            blocking.append(row)
+        elif (oid and not git_issues and path not in delta and CONFIG_NAME not in delta
+              and row["code"] == "missing_field" and row.get("artifact_id")
+              and row["message"].split(" ", 1)[0] in {"title", "owners", "evidence"}):
+            # An intrinsic schema defect in an unchanged document, outside the known impact graph.
+            background.append(row)
+        else:
+            unknown.append(row)
+
+    config, _ = load_config(root)
+    roots = [normalize_relative(v).rstrip("/") for v in configured_paths(config)] if config else []
+    if CONFIG_NAME in delta:
+        unknown.append({"code": "governance_scope_changed", "path": CONFIG_NAME,
+                        "message": "Review policy changes explicitly; do not certify using the new scope alone."})
+    # A removed envelope silently drops a document from the current graph. Check changed
+    # tracked Markdown against the base blob, not just the working-tree parser.
+    digests: dict[str, str | None] = {}
+    for path in sorted(changed_set) if oid else []:
+        if not is_safe_relative(path) or path_has_linklike_component(root, path):
+            blocking.append({"code": "unsafe_changed_path", "path": path})
+            continue
+        target = resolve_repository_path(root, path)
+        if target is None or (target.exists() and not target.is_file()):
+            unknown.append({"code": "unreadable_changed_file", "path": path})
+            continue
+        digest = hashlib.sha256()
+        if target.is_file():
+            with target.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(131072), b""):
+                    digest.update(chunk)
+            digests[path] = digest.hexdigest()
+        else:
+            digests[path] = None
+        if not config or not any(r == "." or path == r or path.startswith(r + "/") for r in roots):
+            continue
+        if not is_scannable_markdown(target, root, config.get("exclude", []), config.get("generated_dir", "docs/generated")):
+            continue
+        blob = subprocess.run(["git", "show", f"{oid}:{path}"], cwd=root, capture_output=True)
+        if blob.returncode:
+            continue  # a new path has no base artifact
+        text = blob.stdout.decode("utf-8", errors="replace")
+        if not METADATA_PATTERN.search(strip_fenced_code_blocks(text)):
+            continue
+        target = resolve_repository_path(root, path)
+        if target is None or path_has_linklike_component(root, path):
+            blocking.append({"code": "unsafe_managed_path", "path": path})
+        else:
+            try:
+                current = target.read_text(encoding="utf-8") if target.is_file() else ""
+            except (OSError, UnicodeError):
+                unknown.append({"code": "unreadable_managed_file", "path": path})
+                continue
+            if not METADATA_PATTERN.search(strip_fenced_code_blocks(current)):
+                blocking.append({"code": "managed_marker_removed", "path": path,
+                                 "message": "Review retirement or relocation before certifying the documentation change."})
+
+    unsafe = any(x["code"].startswith("unsafe") for x in blocking)
+    ready = not (unknown or blocking)
+    decision = ("stop_unsafe_operation" if unsafe else "repair_current_scope" if blocking else
+                "review_unknown_scope" if unknown else "continue_with_debt" if background else "continue")
+    return {"kind": "docs-architect.assessment.v1", "base_revision": oid, "decision": decision,
+            "can_implement": not unsafe, "can_close_docs": ready, "audit_ok": report["ok"],
+            "changed_files": sorted(changed_set), "affected_documents": report.get("affected_documents", []),
+            "blocking": blocking, "unknown": unknown, "background": background, "file_digests": digests,
+            "warnings": [row for row in report["findings"] if row["severity"] != "error"],
+            "semantic_review_recommended": report.get("semantic_review_recommended", True)}, int(not ready)
 
 
 def traceability_payload(artifacts: Sequence[Artifact]) -> dict[str, Any]:
@@ -2752,6 +2855,12 @@ def run_init(root: Path) -> tuple[dict[str, Any], int]:
 
 
 def print_text(command: str, payload: dict[str, Any]) -> None:
+    if command == "assess" and "decision" in payload:
+        print(f"{payload['decision']} (can implement: {payload['can_implement']}; docs ready: {payload['can_close_docs']})")
+        for group in ("blocking", "unknown", "background", "warnings"):
+            for row in payload[group]:
+                print(f"{group}: {row.get('path', '')} [{row['code']}] {row.get('message', '')}")
+        return
     if command == "check":
         summary = payload.get("summary", {})
         print(
@@ -2800,6 +2909,11 @@ def build_parser() -> argparse.ArgumentParser:
     impact_parser.add_argument("--changed", nargs="+", help="Explicit repository-relative changed paths.")
     impact_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
 
+    assess = subparsers.add_parser("assess", help="Decide scoped documentation readiness, not full audit health.")
+    assess.add_argument("--base", help="Baseline revision (default: HEAD)")
+    assess.add_argument("--changed", nargs="+", help="Additional paths; does not hide the Git delta")
+    assess.add_argument("--json", action="store_true")
+
     index_parser = subparsers.add_parser("index", help="Preview or write deterministic traceability indexes.")
     index_parser.add_argument("--write", action="store_true", help="Write generated index files.")
     index_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
@@ -2815,6 +2929,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload, exit_code = run_init(root)
         elif args.command == "check":
             payload, exit_code = run_check(root)
+        elif args.command == "assess":
+            payload, exit_code = run_assess(root, args.changed, args.base)
         elif args.command == "impact":
             payload, exit_code = run_impact(root, args.changed, args.base)
         else:
